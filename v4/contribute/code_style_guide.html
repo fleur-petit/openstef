@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=76f329c7" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=01a4ee56" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -619,12 +619,12 @@ poe<span class="w"> </span>format
 </section>
 <section id="type-hints">
 <span id="id3"></span><h2>Type Hints<a class="headerlink" href="#type-hints" title="Link to this heading">#</a></h2>
-<p>OpenSTEF 4.0 uses comprehensive type hints for better code clarity and IDE support.</p>
+<p>OpenSTEF 4.0 uses type hints for better code clarity and IDE support.</p>
 <section id="required-type-hints">
 <h3>Required type hints<a class="headerlink" href="#required-type-hints" title="Link to this heading">#</a></h3>
 <p>All <strong>public functions</strong> and <strong>class methods</strong> must have type hints:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">train_forecaster</span><span class="p">(</span>
-    <span class="n">data</span><span class="p">:</span> <span class="n">TimeseriesDataset</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">,</span>
     <span class="n">validation_split</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainingResult</span><span class="p">:</span>
@@ -660,7 +660,7 @@ poe<span class="w"> </span>format
     <span class="k">pass</span>
 
 <span class="c1"># Union types for flexible inputs</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeseriesDataset</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_data</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesDataset</span><span class="p">:</span>
     <span class="k">pass</span>
 
 <span class="c1"># Generic containers</span>
@@ -718,7 +718,7 @@ poe<span class="w"> </span>all<span class="w"> </span>--check
 <h3>Parameter handling<a class="headerlink" href="#parameter-handling" title="Link to this heading">#</a></h3>
 <p>Use keyword-only arguments for configuration parameters:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">train_model</span><span class="p">(</span>
-    <span class="n">data</span><span class="p">:</span> <span class="n">TimeseriesDataset</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>  <span class="c1"># Force keyword-only arguments after this</span>
     <span class="n">validation_split</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
     <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -740,11 +740,11 @@ poe<span class="w"> </span>all<span class="w"> </span>--check
 <span class="k">class</span><span class="w"> </span><span class="nc">LagTransform</span><span class="p">(</span><span class="n">BaseTransform</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configurable component with fit/transform API.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TimeseriesDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;LagTransform&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;LagTransform&quot;</span><span class="p">:</span>
         <span class="c1"># Learn parameters if needed</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TimeseriesDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeseriesDataset</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesDataset</span><span class="p">:</span>
         <span class="c1"># Apply transformation</span>
         <span class="k">pass</span>
 
@@ -775,7 +775,7 @@ poe<span class="w"> </span>all<span class="w"> </span>--check
 <section id="documentation-standards">
 <span id="docstring-standards"></span><h2>Documentation Standards<a class="headerlink" href="#documentation-standards" title="Link to this heading">#</a></h2>
 <p>All public functions and classes must have Google-style docstrings. See
-<a class="reference internal" href="document.html"><span class="doc">Documentation Guide</span></a> for comprehensive documentation guidelines.</p>
+<a class="reference internal" href="document.html"><span class="doc">Documentation Guide</span></a> for documentation guidelines.</p>
 <section id="minimal-docstring-requirements">
 <h3>Minimal docstring requirements<a class="headerlink" href="#minimal-docstring-requirements" title="Link to this heading">#</a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">extract_lag_features</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">lags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
@@ -874,7 +874,7 @@ practices for consistent and useful logging throughout the codebase.</p>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">train_forecaster</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">TimeseriesDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastModel</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">train_forecaster</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastModel</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Train a forecasting model.&quot;&quot;&quot;</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Training model with </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2"> samples&quot;</span><span class="p">)</span>
@@ -901,9 +901,11 @@ which provides several benefits:</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>OpenSTEF also provides a more advanced logging system through the main <code class="docutils literal notranslate"><span class="pre">openstef</span></code> package
-with support for structured logging. However, individual packages (<code class="docutils literal notranslate"><span class="pre">openstef-models</span></code>,
-<code class="docutils literal notranslate"><span class="pre">openstef-beam</span></code>, etc.) use standard Python logging with <code class="docutils literal notranslate"><span class="pre">NullHandler</span></code> by default to
-give users complete control over logging configuration. See the <a class="reference internal" href="../user_guide/logging.html"><span class="doc">Logging</span></a>
+with support for structured logging. However, individual packages (<code class="docutils literal notranslate"><span class="pre">openstef-models</span></code>,</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">openstef-beam</span></code>, <code class="docutils literal notranslate"><span class="pre">openstef-core</span></code>, etc.) use standard Python logging with <code class="docutils literal notranslate"><span class="pre">NullHandler</span></code> by default to</p>
+</div></blockquote>
+<p>give users complete control over logging configuration. See the <a class="reference internal" href="../user_guide/logging.html"><span class="doc">Logging</span></a>
 guide for details on both approaches.</p>
 </div>
 </section>
@@ -958,7 +960,7 @@ guide for details on both approaches.</p>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">train_model</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">TimeseriesDataset</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainedModel</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">train_model</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrainedModel</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Train a forecasting model with detailed logging context.&quot;&quot;&quot;</span>
 
     <span class="c1"># Add extra context to log messages</span>
@@ -1026,7 +1028,7 @@ a function/class, use <code class="docutils literal notranslate"><span class="pr
             <span class="p">}</span>
         <span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TimeseriesDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeseriesDataset</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesDataset</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply feature engineering transformations.&quot;&quot;&quot;</span>
 
         <span class="c1"># All log messages will include the adapter&#39;s extra context</span>
@@ -1047,7 +1049,7 @@ a function/class, use <code class="docutils literal notranslate"><span class="pr
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Feature engineering completed, output shape: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">result</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">process_multiple_datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeseriesDataset</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeseriesDataset</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">process_multiple_datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeriesDataset</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeriesDataset</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Process multiple datasets with batch context.&quot;&quot;&quot;</span>
 
     <span class="c1"># Create adapter for batch processing context</span>
@@ -1139,8 +1141,8 @@ a function/class, use <code class="docutils literal notranslate"><span class="pr
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">robust_data_loading</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeseriesDataset</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load data with comprehensive error handling and logging.&quot;&quot;&quot;</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">robust_data_loading</span><span class="p">(</span><span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesDataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load data with error handling and logging.&quot;&quot;&quot;</span>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading data from </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -1158,7 +1160,7 @@ a function/class, use <code class="docutils literal notranslate"><span class="pr
         <span class="c1"># Validate data structure</span>
         <span class="n">_validate_data_structure</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">TimeseriesDataset</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">TimeSeriesDataset</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
     <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -1410,8 +1412,8 @@ poe<span class="w"> </span>doctests<span class="w">           </span><span class
 <section id="data-validation-patterns">
 <h3>Data validation patterns<a class="headerlink" href="#data-validation-patterns" title="Link to this heading">#</a></h3>
 <p>Implement data validation using clear, testable functions:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">validate_timeseries_data</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeseriesDataset</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate and convert DataFrame to TimeseriesDataset.</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">validate_timeseries_data</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesDataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate and convert DataFrame to TimeSeriesDataset.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        DataValidationError: If data fails validation checks.</span>
@@ -1426,7 +1428,7 @@ poe<span class="w"> </span>doctests<span class="w">           </span><span class
     <span class="c1"># Check data quality</span>
     <span class="n">_validate_data_quality</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">TimeseriesDataset</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">TimeSeriesDataset</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -1535,7 +1537,7 @@ poe<span class="w"> </span>doctests<span class="w">           </span><span class
 <ul class="simple">
 <li><p>💬 <strong>Slack</strong>: Join the <a class="reference external" href="https://slack.lfenergy.org/">LF Energy Slack workspace</a> (#openstef channel)</p></li>
 <li><p>🐛 <strong>Issues</strong>: Check <a class="reference external" href="https://github.com/OpenSTEF/openstef/issues">GitHub Issues</a> or create a new one</p></li>
-<li><p>📧 <strong>Email</strong>: Contact us at <code class="docutils literal notranslate"><span class="pre">short.term.energy.forecasts&#64;alliander.com</span></code></p></li>
+<li><p>📧 <strong>Email</strong>: Contact us at <code class="docutils literal notranslate"><span class="pre">openstef&#64;lfenergy.org</span></code></p></li>
 <li><p>🤝 <strong>Community meetings</strong>: Join our four-weekly co-coding sessions</p></li>
 </ul>
 <p>For more information, see our <a class="reference internal" href="../project/support.html"><span class="doc">Support</span></a> page.</p>

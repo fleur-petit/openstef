@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=76f329c7" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=01a4ee56" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -563,7 +563,7 @@ git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </
 git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: add transformer-based forecasting model</span>
 
 <span class="s2">- Implement attention mechanism for temporal dependencies</span>
-<span class="s2">- Add comprehensive tests with 95% coverage</span>
+<span class="s2">- Add tests with 95% coverage</span>
 <span class="s2">- Update documentation with usage examples</span>
 
 <span class="s2">Closes #123&quot;</span>
@@ -689,7 +689,7 @@ poe<span class="w"> </span>reuse<span class="w"> </span>--fix
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">reuse</span> <span class="pre">--fix</span></code> command automatically adds the correct license header to new files:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># SPDX-FileCopyrightText: 2025 Contributors to the OpenSTEF project &lt;short.term.energy.forecasts@alliander.com&gt;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># SPDX-FileCopyrightText: 2025 Contributors to the OpenSTEF project &lt;openstef@lfenergy.org&gt;</span>
 <span class="c1">#</span>
 <span class="c1"># SPDX-License-Identifier: MPL-2.0</span>
 </pre></div>
@@ -724,7 +724,7 @@ This PR implements a transformer-based neural network model for time series fore
 
 <span class="k">-</span><span class="w"> </span>Add <span class="sb">`TransformerForecaster`</span> class in <span class="sb">`openstef_models.models.forecasting`</span>
 <span class="k">-</span><span class="w"> </span>Implement attention mechanism for temporal dependencies
-<span class="k">-</span><span class="w"> </span>Add comprehensive tests with 95% coverage
+<span class="k">-</span><span class="w"> </span>Add tests with 95% coverage
 <span class="k">-</span><span class="w"> </span>Update documentation with usage examples
 
 <span class="gu">## Testing</span>
@@ -757,6 +757,7 @@ Closes <span class="ni">#123</span>
 <li><p><strong>Changes in</strong> <code class="docutils literal notranslate"><span class="pre">openstef-models</span></code> <strong>affect the core forecasting functionality</strong></p></li>
 <li><p><strong>Changes in</strong> <code class="docutils literal notranslate"><span class="pre">openstef-beam</span></code> <strong>affect evaluation and analysis tools</strong></p></li>
 <li><p><strong>Changes in</strong> <code class="docutils literal notranslate"><span class="pre">docs</span></code> <strong>affect documentation</strong></p></li>
+<li><p><strong>Changes in</strong> <code class="docutils literal notranslate"><span class="pre">openstef-core</span></code> <strong>affect shared dataset types and utilities and therefore can impact both `openstef-models` and `openstef-beam`</strong></p></li>
 </ul>
 <p>If your changes span multiple packages, make sure to:</p>
 <ul class="simple">
@@ -771,7 +772,7 @@ Closes <span class="ni">#123</span>
 <ul class="simple">
 <li><p>💬 <strong>Slack</strong>: Join the <a class="reference external" href="https://slack.lfenergy.org/">LF Energy Slack workspace</a> (#openstef channel)</p></li>
 <li><p>🐛 <strong>Issues</strong>: Check <a class="reference external" href="https://github.com/OpenSTEF/openstef/issues">GitHub Issues</a> or create a new one</p></li>
-<li><p>📧 <strong>Email</strong>: Contact us at <code class="docutils literal notranslate"><span class="pre">short.term.energy.forecasts&#64;alliander.com</span></code></p></li>
+<li><p>📧 <strong>Email</strong>: Contact us at <code class="docutils literal notranslate"><span class="pre">openstef&#64;lfenergy.org</span></code></p></li>
 <li><p>🤝 <strong>Community meetings</strong>: Join our four-weekly co-coding sessions</p></li>
 </ul>
 <p>For more information, see our <a class="reference internal" href="../project/support.html"><span class="doc">Support</span></a> page.</p>

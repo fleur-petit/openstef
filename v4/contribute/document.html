@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=76f329c7" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=01a4ee56" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -473,7 +473,7 @@
   <section id="documentation-guide">
 <span id="documenting-openstef"></span><h1>Documentation Guide<a class="headerlink" href="#documentation-guide" title="Link to this heading">#</a></h1>
 <p>OpenSTEF welcomes improvements to documentation! Whether you’re fixing typos, clarifying
-explanations, or adding comprehensive tutorials, your contributions help make forecasting
+explanations, or adding tutorials, your contributions help make forecasting
 more accessible to everyone.</p>
 <section id="getting-started">
 <h2>Getting started<a class="headerlink" href="#getting-started" title="Link to this heading">#</a></h2>
@@ -496,7 +496,7 @@ more accessible to everyone.</p>
 
 examples/             # Example scripts and tutorials
 ├── examples/         # Gallery examples
-└── tutorials/        # Comprehensive tutorials
+└── tutorials/        # Tutorials
 
 packages/*/src/       # Inline code documentation (docstrings)
 </pre></div>
@@ -595,7 +595,7 @@ for all code documentation. This style is clear, readable, and well-supported by
 <p>Always use type hints in function signatures. The docstring should complement, not repeat,
 the type information:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good: Type hints in signature, description in docstring</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">train_model</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">TimeseriesDataset</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastModel</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">train_model</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastModel</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Train a forecasting model on the provided dataset.</span>
 
 <span class="sd">    Args:</span>
@@ -607,11 +607,11 @@ the type information:</p>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <span class="c1"># Avoid: Repeating type information in docstring</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">train_model</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">TimeseriesDataset</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastModel</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">train_model</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ModelConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastModel</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Train a forecasting model on the provided dataset.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        data (TimeseriesDataset): Training dataset with features and targets.</span>
+<span class="sd">        data (TimeSeriesDataset): Training dataset with features and targets.</span>
 <span class="sd">        config (ModelConfig): Model configuration including hyperparameters.</span>
 
 <span class="sd">    Returns:</span>
@@ -757,7 +757,7 @@ Refer to <span class="na">:ref:</span><span class="nv">`development_setup`</span
 <li><p><strong>Choose the right location</strong>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">examples/examples/</span></code> - Short, focused examples</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">examples/tutorials/</span></code> - Comprehensive, multi-step tutorials</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">examples/tutorials/</span></code> - Multi-step tutorials</p></li>
 </ul>
 </li>
 <li><p><strong>Follow naming conventions</strong>:</p>
@@ -840,7 +840,7 @@ poe<span class="w"> </span>all<span class="w"> </span>--check
 <ul class="simple">
 <li><p>💬 <strong>Slack</strong>: Join the <a class="reference external" href="https://slack.lfenergy.org/">LF Energy Slack workspace</a> (#openstef channel)</p></li>
 <li><p>🐛 <strong>Issues</strong>: Check <a class="reference external" href="https://github.com/OpenSTEF/openstef/issues">GitHub Issues</a> or create a new one</p></li>
-<li><p>📧 <strong>Email</strong>: Contact us at <code class="docutils literal notranslate"><span class="pre">short.term.energy.forecasts&#64;alliander.com</span></code></p></li>
+<li><p>📧 <strong>Email</strong>: Contact us at <code class="docutils literal notranslate"><span class="pre">openstef&#64;lfenergy.org</span></code></p></li>
 <li><p>🤝 <strong>Community meetings</strong>: Join our four-weekly co-coding sessions</p></li>
 </ul>
 <p>For more information, see our <a class="reference internal" href="../project/support.html"><span class="doc">Support</span></a> page.</p>

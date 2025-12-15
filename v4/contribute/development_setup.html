@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/plot_directive.css" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=76f329c7" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=01a4ee56" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -536,6 +536,7 @@ pip</label><div class="sd-tab-content docutils">
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">openstef-models</span></code>: Core forecasting models, feature engineering, and data processing</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">openstef-beam</span></code>: Backtesting, evaluation, analysis and metrics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">openstef-core</span></code>: Core utilities, dataset types, shared types and base models used by other packages</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">docs</span></code>: Documentation source</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">openstef-compatibility</span></code>: Compatibility layer for OpenSTEF 3.x (coming soon)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">openstef-foundational-models</span></code>: Deep learning and foundational models (coming soon)</p></li>
@@ -549,7 +550,7 @@ pip</label><div class="sd-tab-content docutils">
 <li><p>Create a virtual environment (if one doesn’t exist)</p></li>
 <li><p>Install all workspace packages in development mode</p></li>
 <li><p>Install all development dependencies including testing, linting, and documentation tools</p></li>
-<li><p>Install all optional extras for comprehensive development</p></li>
+<li><p>Install all optional extras for development</p></li>
 </ol>
 </section>
 <section id="understanding-the-workspace-structure">
@@ -557,8 +558,9 @@ pip</label><div class="sd-tab-content docutils">
 <p>OpenSTEF 4.0 uses a monorepo workspace structure defined in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>:</p>
 <div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[tool.uv.workspace]</span>
 <span class="n">members</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">  </span><span class="s2">&quot;packages/openstef-models&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="s2">&quot;packages/openstef-beam&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;packages/openstef-models&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;packages/openstef-beam&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;packages/openstef-core&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="s2">&quot;docs&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 </pre></div>
