@@ -54,6 +54,7 @@ Classes
    :template: custom_class.rst
 
    EnergyComponentDataset
+   EnsembleForecastDataset
    ForecastDataset
    ForecastInputDataset
    TimeSeriesDataset

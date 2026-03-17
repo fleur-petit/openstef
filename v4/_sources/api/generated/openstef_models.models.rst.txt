@@ -28,6 +28,7 @@ Classes
    :toctree: .
    :template: custom_class.rst
 
+   BaseForecastingModel
    ComponentSplittingModel
    ForecastingModel
 

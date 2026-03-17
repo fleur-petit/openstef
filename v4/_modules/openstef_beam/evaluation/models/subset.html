@@ -515,6 +515,26 @@
 <span class="sd">            The metric value if it exists, otherwise None.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">quantile</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">metric_name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SubsetMetric.to_flat_dict">
+<a class="viewcode-back" href="../../../../api/generated/openstef_beam.evaluation.SubsetMetric.html#openstef_beam.evaluation.SubsetMetric.to_flat_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_flat_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flatten metrics into a single dict suitable for logging (e.g. MLflow).</span>
+
+<span class="sd">        Each key is ``{prefix}{quantile}_{metric_name}``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            prefix: String prepended to every key.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Flat mapping of metric names to values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">quantile</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="n">value</span>
+            <span class="k">for</span> <span class="n">quantile</span><span class="p">,</span> <span class="n">metrics_dict</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">metric_name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">metrics_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span></div>
 </div>
 
 

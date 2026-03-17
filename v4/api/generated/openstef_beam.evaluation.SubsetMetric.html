@@ -402,6 +402,7 @@
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_core.datasets.validate_horizons_present.html">validate_horizons_present</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_core.datasets.EnergyComponentDataset.html">EnergyComponentDataset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="openstef_core.datasets.EnsembleForecastDataset.html">EnsembleForecastDataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_core.datasets.ForecastDataset.html">ForecastDataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_core.datasets.ForecastInputDataset.html">ForecastInputDataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_core.datasets.TimeSeriesDataset.html">TimeSeriesDataset</a></li>
@@ -444,11 +445,13 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="openstef_models.transforms.html">openstef_models.transforms</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="openstef_models.models.html">openstef_models.models</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="openstef_models.models.BaseForecastingModel.html">BaseForecastingModel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_models.models.ComponentSplittingModel.html">ComponentSplittingModel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_models.models.ForecastingModel.html">ForecastingModel</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="openstef_models.explainability.html">openstef_models.explainability</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="openstef_models.explainability.ContributionsMixin.html">ContributionsMixin</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_models.explainability.ExplainableForecaster.html">ExplainableForecaster</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_models.explainability.FeatureImportancePlotter.html">FeatureImportancePlotter</a></li>
 </ul>
@@ -456,9 +459,11 @@
 </ul>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 has-children"><a class="reference internal" href="openstef_beam.metrics.html">openstef_beam.metrics</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="openstef_beam.metrics.completeness.html">completeness</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_beam.metrics.confusion_matrix.html">confusion_matrix</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_beam.metrics.crps.html">crps</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_beam.metrics.fbeta.html">fbeta</a></li>
+<li class="toctree-l2"><a class="reference internal" href="openstef_beam.metrics.mae.html">mae</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_beam.metrics.mape.html">mape</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_beam.metrics.mean_absolute_calibration_error.html">mean_absolute_calibration_error</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openstef_beam.metrics.observed_probability.html">observed_probability</a></li>
@@ -655,6 +660,27 @@ and temporal periods.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="openstef_beam.evaluation.SubsetMetric.to_flat_dict">
+<span class="sig-name descname"><span class="pre">to_flat_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/openstef_beam/evaluation/models/subset.html#SubsetMetric.to_flat_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#openstef_beam.evaluation.SubsetMetric.to_flat_dict" title="Link to this definition">#</a></dt>
+<dd><p>Flatten metrics into a single dict suitable for logging (e.g. MLflow).</p>
+<p>Each key is <code class="docutils literal notranslate"><span class="pre">{prefix}{quantile}_{metric_name}</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prefix</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – String prepended to every key.</p></li>
+<li><p><strong>prefix</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Flat mapping of metric names to values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="openstef_beam.evaluation.SubsetMetric.model_config">
 <span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'arbitrary_types_allowed':</span> <span class="pre">True,</span> <span class="pre">'protected_namespaces':</span> <span class="pre">(),</span> <span class="pre">'ser_json_inf_nan':</span> <span class="pre">'null'}</span></em><a class="headerlink" href="#openstef_beam.evaluation.SubsetMetric.model_config" title="Link to this definition">#</a></dt>
@@ -719,6 +745,7 @@ and temporal periods.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#openstef_beam.evaluation.SubsetMetric.get_quantiles"><code class="docutils literal notranslate"><span class="pre">SubsetMetric.get_quantiles()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#openstef_beam.evaluation.SubsetMetric.to_dataframe"><code class="docutils literal notranslate"><span class="pre">SubsetMetric.to_dataframe()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#openstef_beam.evaluation.SubsetMetric.get_metric"><code class="docutils literal notranslate"><span class="pre">SubsetMetric.get_metric()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#openstef_beam.evaluation.SubsetMetric.to_flat_dict"><code class="docutils literal notranslate"><span class="pre">SubsetMetric.to_flat_dict()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#openstef_beam.evaluation.SubsetMetric.model_config"><code class="docutils literal notranslate"><span class="pre">SubsetMetric.model_config</span></code></a></li>
 </ul>
 </li>

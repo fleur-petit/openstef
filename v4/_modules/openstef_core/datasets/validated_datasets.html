@@ -460,6 +460,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">openstef_core.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">MissingColumnsError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">openstef_core.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">EnergyComponentType</span><span class="p">,</span> <span class="n">LeadTime</span><span class="p">,</span> <span class="n">Quantile</span>
 
+<span class="n">ENSEMBLE_COLUMN_SEP</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;__&quot;</span>
+
 
 <div class="viewcode-block" id="ForecastInputDataset">
 <a class="viewcode-back" href="../../../api/generated/openstef_core.datasets.ForecastInputDataset.html#openstef_core.datasets.ForecastInputDataset">[docs]</a>
@@ -909,8 +911,171 @@
 
 
 
+<div class="viewcode-block" id="EnsembleForecastDataset">
+<a class="viewcode-back" href="../../../api/generated/openstef_core.datasets.EnsembleForecastDataset.html#openstef_core.datasets.EnsembleForecastDataset">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EnsembleForecastDataset</span><span class="p">(</span><span class="n">TimeSeriesDataset</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;First stage output format for ensemble forecasters.&quot;&quot;&quot;</span>
+
+    <span class="n">forecast_start</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">quantiles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Quantile</span><span class="p">]</span>
+    <span class="n">forecaster_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">target_column</span><span class="p">:</span> <span class="nb">str</span>
+
+<div class="viewcode-block" id="EnsembleForecastDataset.__init__">
+<a class="viewcode-back" href="../../../api/generated/openstef_core.datasets.EnsembleForecastDataset.html#openstef_core.datasets.EnsembleForecastDataset.__init__">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">sample_interval</span><span class="p">:</span> <span class="n">timedelta</span> <span class="o">=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">15</span><span class="p">),</span>
+        <span class="n">forecast_start</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">target_column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;load&quot;</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">horizon_column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;horizon&quot;</span><span class="p">,</span>
+        <span class="n">available_at_column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;available_at&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;forecast_start&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_start</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;forecast_start&quot;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_start</span> <span class="o">=</span> <span class="n">forecast_start</span> <span class="k">if</span> <span class="n">forecast_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">data</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;target_column&quot;</span><span class="p">,</span> <span class="n">target_column</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">sample_interval</span><span class="o">=</span><span class="n">sample_interval</span><span class="p">,</span>
+            <span class="n">horizon_column</span><span class="o">=</span><span class="n">horizon_column</span><span class="p">,</span>
+            <span class="n">available_at_column</span><span class="o">=</span><span class="n">available_at_column</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">quantile_feature_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">feature_names</span> <span class="k">if</span> <span class="n">col</span> <span class="o">!=</span> <span class="n">target_column</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">forecaster_names</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_learner_and_quantile</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">quantile_feature_names</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecaster_names</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ENSEMBLE_COLUMN_SEP</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Forecaster name &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; must not contain separator &#39;</span><span class="si">{</span><span class="n">ENSEMBLE_COLUMN_SEP</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">n_cols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecaster_names</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="n">n_cols</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_cols</span><span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Data columns do not match the expected number based on base forecasters and quantiles.&quot;</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">target_series</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the target series if available.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">]</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="EnsembleForecastDataset.get_learner_and_quantile">
+<a class="viewcode-back" href="../../../api/generated/openstef_core.datasets.EnsembleForecastDataset.html#openstef_core.datasets.EnsembleForecastDataset.get_learner_and_quantile">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_learner_and_quantile</span><span class="p">(</span><span class="n">feature_names</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">Quantile</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract base forecaster names and quantiles from feature names.</span>
+
+<span class="sd">        Column format is ``{learner}{ENSEMBLE_COLUMN_SEP}{quantile.format()}``,</span>
+<span class="sd">        e.g. ``lgbm__quantile_P50``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            feature_names: Index of feature names in the dataset.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple containing a list of base forecaster names and a list of quantiles.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If a column cannot be parsed or has an invalid quantile string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">forecasters</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">quantiles</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">Quantile</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">feature_name</span> <span class="ow">in</span> <span class="n">feature_names</span><span class="p">:</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">feature_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">ENSEMBLE_COLUMN_SEP</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># noqa: PLR2004</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Column missing separator &#39;</span><span class="si">{</span><span class="n">ENSEMBLE_COLUMN_SEP</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">feature_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="n">learner_part</span><span class="p">,</span> <span class="n">quantile_part</span> <span class="o">=</span> <span class="n">parts</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">Quantile</span><span class="o">.</span><span class="n">is_valid_quantile_string</span><span class="p">(</span><span class="n">quantile_part</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Column has no valid quantile string: </span><span class="si">{</span><span class="n">feature_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+            <span class="n">forecasters</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">learner_part</span><span class="p">)</span>
+            <span class="n">quantiles</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Quantile</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">quantile_part</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">forecasters</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EnsembleForecastDataset.from_forecast_datasets">
+<a class="viewcode-back" href="../../../api/generated/openstef_core.datasets.EnsembleForecastDataset.html#openstef_core.datasets.EnsembleForecastDataset.from_forecast_datasets">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_forecast_datasets</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">datasets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ForecastDataset</span><span class="p">],</span>
+        <span class="n">target_series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sample_weights</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an EnsembleForecastDataset from multiple ForecastDatasets.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            datasets: Dict of ForecastDatasets to combine.</span>
+<span class="sd">            target_series: Optional target series to include in the dataset.</span>
+<span class="sd">            sample_weights: Optional sample weights series to include in the dataset.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            EnsembleForecastDataset combining all input datasets.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ds1</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">datasets</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="n">additional_columns</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds1</span><span class="o">.</span><span class="n">target_series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
+            <span class="n">additional_columns</span><span class="p">[</span><span class="n">ds1</span><span class="o">.</span><span class="n">target_column</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds1</span><span class="o">.</span><span class="n">target_series</span>
+        <span class="k">elif</span> <span class="n">target_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">additional_columns</span><span class="p">[</span><span class="n">ds1</span><span class="o">.</span><span class="n">target_column</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_series</span>
+
+        <span class="n">sample_weight_column</span> <span class="o">=</span> <span class="s2">&quot;sample_weight&quot;</span>
+        <span class="k">if</span> <span class="n">sample_weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">additional_columns</span><span class="p">[</span><span class="n">sample_weight_column</span><span class="p">]</span> <span class="o">=</span> <span class="n">sample_weights</span>
+
+        <span class="n">combined_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">learner</span><span class="si">}{</span><span class="n">ENSEMBLE_COLUMN_SEP</span><span class="si">}{</span><span class="n">q</span><span class="o">.</span><span class="n">format</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="n">ds</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">format</span><span class="p">()]</span>
+            <span class="k">for</span> <span class="n">learner</span><span class="p">,</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">datasets</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">quantiles</span>
+        <span class="p">})</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="o">**</span><span class="n">additional_columns</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">combined_data</span><span class="p">,</span>
+            <span class="n">sample_interval</span><span class="o">=</span><span class="n">ds1</span><span class="o">.</span><span class="n">sample_interval</span><span class="p">,</span>
+            <span class="n">forecast_start</span><span class="o">=</span><span class="n">ds1</span><span class="o">.</span><span class="n">forecast_start</span><span class="p">,</span>
+            <span class="n">target_column</span><span class="o">=</span><span class="n">ds1</span><span class="o">.</span><span class="n">target_column</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EnsembleForecastDataset.get_base_predictions_for_quantile">
+<a class="viewcode-back" href="../../../api/generated/openstef_core.datasets.EnsembleForecastDataset.html#openstef_core.datasets.EnsembleForecastDataset.get_base_predictions_for_quantile">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_base_predictions_for_quantile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantile</span><span class="p">:</span> <span class="n">Quantile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastInputDataset</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get base forecaster predictions for a specific quantile.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            quantile: Quantile to select.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ForecastInputDataset containing predictions from all base forecasters at the specified quantile.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">selected_columns</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">learner</span><span class="si">}{</span><span class="n">ENSEMBLE_COLUMN_SEP</span><span class="si">}{</span><span class="n">quantile</span><span class="o">.</span><span class="n">format</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">learner</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecaster_names</span><span class="p">]</span>
+        <span class="n">selected_columns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">)</span>
+        <span class="n">prediction_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">selected_columns</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">prediction_data</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">forecaster_names</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">ForecastInputDataset</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">prediction_data</span><span class="p">,</span>
+            <span class="n">sample_interval</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sample_interval</span><span class="p">,</span>
+            <span class="n">target_column</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">,</span>
+            <span class="n">forecast_start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_start</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;ENSEMBLE_COLUMN_SEP&quot;</span><span class="p">,</span>
     <span class="s2">&quot;EnergyComponentDataset&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;EnsembleForecastDataset&quot;</span><span class="p">,</span>
     <span class="s2">&quot;ForecastDataset&quot;</span><span class="p">,</span>
     <span class="s2">&quot;ForecastInputDataset&quot;</span><span class="p">,</span>
 <span class="p">]</span>

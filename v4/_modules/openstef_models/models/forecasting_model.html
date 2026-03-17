@@ -443,14 +443,16 @@
 <span class="c1">#</span>
 <span class="c1"># SPDX-License-Identifier: MPL-2.0</span>
 
-<span class="sd">&quot;&quot;&quot;High-level forecasting model that orchestrates the complete prediction pipeline.</span>
+<span class="sd">&quot;&quot;&quot;High-level forecasting models that orchestrate the complete prediction pipeline.</span>
 
-<span class="sd">Combines feature engineering, forecasting, and postprocessing into a unified interface.</span>
-<span class="sd">Handles both single-horizon and multi-horizon forecasters while providing consistent</span>
-<span class="sd">data transformation and validation.</span>
+<span class="sd">Provides ``BaseForecastingModel`` — the abstract base shared by single-model and</span>
+<span class="sd">ensemble pipelines — and ``ForecastingModel``, the concrete single-forecaster</span>
+<span class="sd">implementation.  Both combine preprocessing, prediction, and postprocessing into a</span>
+<span class="sd">unified interface while providing consistent data transformation and validation.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">abstractmethod</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">cast</span><span class="p">,</span> <span class="n">override</span>
@@ -468,9 +470,10 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">openstef_core.datasets.timeseries_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate_horizons_present</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">openstef_core.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InsufficientlyCompleteError</span><span class="p">,</span> <span class="n">NotFittedError</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">openstef_core.mixins</span><span class="w"> </span><span class="kn">import</span> <span class="n">Predictor</span><span class="p">,</span> <span class="n">TransformPipeline</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">openstef_models.models.forecasting</span><span class="w"> </span><span class="kn">import</span> <span class="n">Forecaster</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">openstef_models.models.forecasting.forecaster</span><span class="w"> </span><span class="kn">import</span> <span class="n">ForecasterConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openstef_core.mixins</span><span class="w"> </span><span class="kn">import</span> <span class="n">HyperParams</span><span class="p">,</span> <span class="n">Predictor</span><span class="p">,</span> <span class="n">TransformPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openstef_core.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">LeadTime</span><span class="p">,</span> <span class="n">Quantile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openstef_models.explainability.mixins</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContributionsMixin</span><span class="p">,</span> <span class="n">ExplainableForecaster</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">openstef_models.models.forecasting.forecaster</span><span class="w"> </span><span class="kn">import</span> <span class="n">Forecaster</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">openstef_models.utils.data_split</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataSplitter</span>
 
 
@@ -500,61 +503,56 @@
     <span class="p">)</span>
     <span class="n">metrics_full</span><span class="p">:</span> <span class="n">SubsetMetric</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Evaluation metrics computed on the full original dataset.&quot;</span><span class="p">)</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">metrics_to_flat_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Flatten all split metrics into a single dict for logging.</span>
 
-<div class="viewcode-block" id="ForecastingModel">
-<a class="viewcode-back" href="../../../api/generated/openstef_models.models.ForecastingModel.html#openstef_models.models.ForecastingModel">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">ForecastingModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">,</span> <span class="n">Predictor</span><span class="p">[</span><span class="n">TimeSeriesDataset</span><span class="p">,</span> <span class="n">ForecastDataset</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Complete forecasting pipeline combining preprocessing, prediction, and postprocessing.</span>
+<span class="sd">        Keys are prefixed with ``full_``, ``train_``, ``val_``, ``test_`` respectively.</span>
+<span class="sd">        Subclasses with child results (e.g. per-forecaster) should override to include</span>
+<span class="sd">        them.</span>
 
-<span class="sd">    Orchestrates the full forecasting workflow by managing feature engineering,</span>
-<span class="sd">    model training/prediction, and result postprocessing. Automatically handles</span>
-<span class="sd">    the differences between single-horizon and multi-horizon forecasters while</span>
-<span class="sd">    ensuring data consistency and validation throughout the pipeline.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Flat mapping of metric names to values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics_full</span><span class="o">.</span><span class="n">to_flat_dict</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;full_&quot;</span><span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metrics_train</span><span class="o">.</span><span class="n">to_flat_dict</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;train_&quot;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics_val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metrics_val</span><span class="o">.</span><span class="n">to_flat_dict</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;val_&quot;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics_test</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metrics_test</span><span class="o">.</span><span class="n">to_flat_dict</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;test_&quot;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">result</span>
 
-<span class="sd">    Invariants:</span>
-<span class="sd">        - fit() must be called before predict()</span>
-<span class="sd">        - Forecaster and preprocessing horizons must match during initialization</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">component_fit_results</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;ModelFitResult&quot;</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Per-component fit results (e.g. per-forecaster in an ensemble).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Empty dict by default; ensemble subclasses override.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="BaseForecastingModel">
+<a class="viewcode-back" href="../../../api/generated/openstef_models.models.BaseForecastingModel.html#openstef_models.models.BaseForecastingModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseForecastingModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">,</span> <span class="n">Predictor</span><span class="p">[</span><span class="n">TimeSeriesDataset</span><span class="p">,</span> <span class="n">ForecastDataset</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base for forecasting models (single-forecaster and ensemble).</span>
+
+<span class="sd">    Provides the shared pipeline skeleton: preprocessing -&gt; predict -&gt; postprocessing,</span>
+<span class="sd">    data preparation, scoring, and evaluation.  Concrete subclasses must implement the</span>
+<span class="sd">    abstract hooks ``fit``, ``is_fitted``, ``quantiles``, and ``max_horizon``.</span>
+<span class="sd">    Subclasses following the single-input template method pattern should also override</span>
+<span class="sd">    ``_predict``; those with a different predict flow (e.g. ensemble) can override</span>
+<span class="sd">    ``predict()`` directly.</span>
 
 <span class="sd">    Important:</span>
-<span class="sd">        The `cutoff_history` parameter is crucial when using lag-based features in</span>
-<span class="sd">        preprocessing. For example, a lag-14 transformation creates NaN values for</span>
-<span class="sd">        the first 14 days of data. Set `cutoff_history` to exclude these incomplete</span>
-<span class="sd">        rows from training. You must configure this manually based on your preprocessing</span>
-<span class="sd">        pipeline since lags cannot be automatically inferred from the transforms.</span>
-
-<span class="sd">    Example:</span>
-<span class="sd">        Basic forecasting workflow:</span>
-
-<span class="sd">        &gt;&gt;&gt; from openstef_models.models.forecasting.constant_median_forecaster import (</span>
-<span class="sd">        ...     ConstantMedianForecaster, ConstantMedianForecasterConfig</span>
-<span class="sd">        ... )</span>
-<span class="sd">        &gt;&gt;&gt; from openstef_core.types import LeadTime</span>
-<span class="sd">        &gt;&gt;&gt;</span>
-<span class="sd">        &gt;&gt;&gt; # Note: This is a conceptual example showing the API structure</span>
-<span class="sd">        &gt;&gt;&gt; # Real usage requires implemented forecaster classes</span>
-<span class="sd">        &gt;&gt;&gt; forecaster = ConstantMedianForecaster(</span>
-<span class="sd">        ...     config=ConstantMedianForecasterConfig(horizons=[LeadTime.from_string(&quot;PT36H&quot;)])</span>
-<span class="sd">        ... )</span>
-<span class="sd">        &gt;&gt;&gt; # Create and train model</span>
-<span class="sd">        &gt;&gt;&gt; model = ForecastingModel(</span>
-<span class="sd">        ...     forecaster=forecaster,</span>
-<span class="sd">        ...     cutoff_history=timedelta(days=14),  # Match your maximum lag in preprocessing</span>
-<span class="sd">        ... )</span>
-<span class="sd">        &gt;&gt;&gt; model.fit(training_data)  # doctest: +SKIP</span>
-<span class="sd">        &gt;&gt;&gt;</span>
-<span class="sd">        &gt;&gt;&gt; # Generate forecasts</span>
-<span class="sd">        &gt;&gt;&gt; forecasts = model.predict(new_data)  # doctest: +SKIP</span>
+<span class="sd">        The ``cutoff_history`` parameter is crucial when using lag-based features in</span>
+<span class="sd">        preprocessing.  For example, a lag-14 transformation creates NaN values for the</span>
+<span class="sd">        first 14 days of data.  Set ``cutoff_history`` to exclude these incomplete rows</span>
+<span class="sd">        from training.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="c1"># Forecasting components</span>
     <span class="n">preprocessing</span><span class="p">:</span> <span class="n">TransformPipeline</span><span class="p">[</span><span class="n">TimeSeriesDataset</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default_factory</span><span class="o">=</span><span class="n">TransformPipeline</span><span class="p">[</span><span class="n">TimeSeriesDataset</span><span class="p">],</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Feature engineering pipeline for transforming raw input data into model-ready features.&quot;</span><span class="p">,</span>
-        <span class="n">exclude</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">forecaster</span><span class="p">:</span> <span class="n">Forecaster</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="n">default</span><span class="o">=...</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Underlying forecasting algorithm, either single-horizon or multi-horizon.&quot;</span><span class="p">,</span>
         <span class="n">exclude</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">postprocessing</span><span class="p">:</span> <span class="n">TransformPipeline</span><span class="p">[</span><span class="n">ForecastDataset</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -577,12 +575,12 @@
         <span class="s2">&quot;Set this to match your maximum lag duration (e.g., timedelta(days=14)). &quot;</span>
         <span class="s2">&quot;Default of 0 assumes no invalid rows are created by preprocessing.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="c1"># Evaluation</span>
+
     <span class="n">evaluation_metrics</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">MetricProvider</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="n">R2Provider</span><span class="p">(),</span> <span class="n">ObservedProbabilityProvider</span><span class="p">()],</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of metric providers for evaluating model score.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="c1"># Metadata</span>
+
     <span class="n">tags</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Optional metadata tags for the model.&quot;</span><span class="p">,</span>
@@ -591,14 +589,305 @@
     <span class="n">_logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span> <span class="o">=</span> <span class="n">PrivateAttr</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecasterConfig</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the configuration of the underlying forecaster.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="o">.</span><span class="n">config</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">quantiles</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Quantile</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Quantile levels this model produces forecasts for.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">max_horizon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LeadTime</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Maximum lead-time (horizon) supported by this model.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">hyperparams</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HyperParams</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hyperparameters for this model.</span>
+
+<span class="sd">        Override in subclasses to expose the relevant hyperparameters.  Used by</span>
+<span class="sd">        integrations (e.g. MLflow) to log tuning parameters without needing</span>
+<span class="sd">        to know the model&#39;s internal structure.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            HyperParams instance (defaults to empty base HyperParams).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">HyperParams</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">component_hyperparams</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">HyperParams</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Per-component hyperparameters (e.g. per-forecaster in an ensemble).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Empty dict by default; ensemble subclasses override.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="BaseForecastingModel.get_explainable_components">
+<a class="viewcode-back" href="../../../api/generated/openstef_models.models.BaseForecastingModel.html#openstef_models.models.BaseForecastingModel.get_explainable_components">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_explainable_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ExplainableForecaster</span><span class="p">]:</span>  <span class="c1"># noqa: PLR6301</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return named components that support feature-importance plotting.</span>
+
+<span class="sd">        Keys are used as filename suffixes; an empty key means no suffix.</span>
+<span class="sd">        Override in subclasses to expose forecasters and/or combiners.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Empty dict by default.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="BaseForecastingModel.fit">
+<a class="viewcode-back" href="../../../api/generated/openstef_models.models.BaseForecastingModel.html#openstef_models.models.BaseForecastingModel.fit">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">,</span>
+        <span class="n">data_val</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">data_test</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModelFitResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Train the forecasting model on the provided dataset.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Historical time series data with features and target values.</span>
+<span class="sd">            data_val: Optional validation data.</span>
+<span class="sd">            data_test: Optional test data.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Result containing training details and metrics.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">ForecastInputDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastDataset</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate raw predictions from preprocessed input data.</span>
+
+<span class="sd">        Subclasses that follow the single-input template method pattern implement this.</span>
+<span class="sd">        Subclasses that require a different predict flow (e.g. ensemble) should override</span>
+<span class="sd">        ``predict()`` directly and may leave this unimplemented.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> does not implement _predict; override predict() instead.&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BaseForecastingModel.prepare_input">
+<a class="viewcode-back" href="../../../api/generated/openstef_models.models.BaseForecastingModel.html#openstef_models.models.BaseForecastingModel.prepare_input">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_input</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">,</span>
+        <span class="n">forecast_start</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastInputDataset</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare input data for forecasting by applying preprocessing and filtering.</span>
+
+<span class="sd">        Transforms raw time series data through the preprocessing pipeline, restores</span>
+<span class="sd">        the target column, and filters out incomplete historical data to ensure</span>
+<span class="sd">        training quality.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Raw time series dataset to prepare for forecasting.</span>
+<span class="sd">            forecast_start: Optional start time for forecasts. If provided and earlier</span>
+<span class="sd">                than the cutoff time, overrides the cutoff for data filtering.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Processed forecast input dataset ready for model prediction.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">input_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">input_data</span> <span class="o">=</span> <span class="n">restore_target</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">input_data</span><span class="p">,</span> <span class="n">original_dataset</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">target_column</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">)</span>
+
+        <span class="n">input_data_start</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;pd.Series[pd.Timestamp]&quot;</span><span class="p">,</span> <span class="n">input_data</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span>
+        <span class="n">input_data_cutoff</span> <span class="o">=</span> <span class="n">input_data_start</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cutoff_history</span>
+        <span class="k">if</span> <span class="n">forecast_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">forecast_start</span> <span class="o">&lt;</span> <span class="n">input_data_cutoff</span><span class="p">:</span>
+            <span class="n">input_data_cutoff</span> <span class="o">=</span> <span class="n">forecast_start</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Forecast start </span><span class="si">%s</span><span class="s2"> is before input data start + cutoff history </span><span class="si">%s</span><span class="s2">. Using forecast start as cutoff.&quot;</span><span class="p">,</span>
+                <span class="n">forecast_start</span><span class="p">,</span>
+                <span class="n">input_data_cutoff</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">input_data</span> <span class="o">=</span> <span class="n">input_data</span><span class="o">.</span><span class="n">filter_by_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">input_data_cutoff</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ForecastInputDataset</span><span class="o">.</span><span class="n">from_timeseries</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">input_data</span><span class="p">,</span>
+            <span class="n">target_column</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">,</span>
+            <span class="n">forecast_start</span><span class="o">=</span><span class="n">forecast_start</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseForecastingModel.predict">
+<a class="viewcode-back" href="../../../api/generated/openstef_models.models.BaseForecastingModel.html#openstef_models.models.BaseForecastingModel.predict">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">,</span> <span class="n">forecast_start</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastDataset</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate forecasts using the trained model.</span>
+
+<span class="sd">        Transforms input data through the preprocessing pipeline, generates predictions</span>
+<span class="sd">        using the underlying forecaster(s), and applies postprocessing transformations.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Input time series data for generating forecasts.</span>
+<span class="sd">            forecast_start: Starting time for forecasts. If None, uses data end time.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Processed forecast dataset with predictions and uncertainty estimates.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotFittedError: If the model hasn&#39;t been trained yet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_fitted</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotFittedError</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="n">input_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare_input</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">forecast_start</span><span class="o">=</span><span class="n">forecast_start</span><span class="p">)</span>
+        <span class="n">raw_predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict</span><span class="p">(</span><span class="n">input_data</span><span class="o">=</span><span class="n">input_data</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">postprocessing</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">raw_predictions</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseForecastingModel.score">
+<a class="viewcode-back" href="../../../api/generated/openstef_models.models.BaseForecastingModel.html#openstef_models.models.BaseForecastingModel.score">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SubsetMetric</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate model performance on the provided dataset.</span>
+
+<span class="sd">        Generates predictions for the dataset and calculates evaluation metrics</span>
+<span class="sd">        by comparing against ground truth values.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Time series dataset containing both features and target values</span>
+<span class="sd">                for evaluation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Evaluation metrics computed at the maximum forecast horizon.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_score</span><span class="p">(</span><span class="n">prediction</span><span class="o">=</span><span class="n">prediction</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prediction</span><span class="p">:</span> <span class="n">ForecastDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SubsetMetric</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">prediction</span><span class="o">.</span><span class="n">target_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Prediction dataset must contain target series for scoring.&quot;</span><span class="p">)</span>
+
+        <span class="n">prediction</span> <span class="o">=</span> <span class="n">prediction</span><span class="o">.</span><span class="n">pipe_pandas</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">dropna</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">])</span>  <span class="c1"># pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]</span>
+
+        <span class="n">pipeline</span> <span class="o">=</span> <span class="n">EvaluationPipeline</span><span class="p">(</span>
+            <span class="n">config</span><span class="o">=</span><span class="n">EvaluationConfig</span><span class="p">(</span><span class="n">available_ats</span><span class="o">=</span><span class="p">[],</span> <span class="n">lead_times</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">max_horizon</span><span class="p">]),</span>
+            <span class="n">quantiles</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">,</span>
+            <span class="n">window_metric_providers</span><span class="o">=</span><span class="p">[],</span>
+            <span class="n">global_metric_providers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">evaluation_metrics</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">evaluation_result</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">run_for_subset</span><span class="p">(</span>
+            <span class="n">filtering</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_horizon</span><span class="p">,</span>
+            <span class="n">predictions</span><span class="o">=</span><span class="n">prediction</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">global_metric</span> <span class="o">=</span> <span class="n">evaluation_result</span><span class="o">.</span><span class="n">get_global_metric</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">global_metric</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SubsetMetric</span><span class="p">(</span>
+                <span class="n">window</span><span class="o">=</span><span class="s2">&quot;global&quot;</span><span class="p">,</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="n">prediction</span><span class="o">.</span><span class="n">forecast_start</span><span class="p">,</span>
+                <span class="n">metrics</span><span class="o">=</span><span class="p">{},</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">global_metric</span>
+
+<div class="viewcode-block" id="BaseForecastingModel.predict_contributions">
+<a class="viewcode-back" href="../../../api/generated/openstef_models.models.BaseForecastingModel.html#openstef_models.models.BaseForecastingModel.predict_contributions">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict_contributions</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">,</span>
+        <span class="n">forecast_start</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesDataset</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute per-sample feature contributions for predictions.</span>
+
+<span class="sd">        Not all models support contributions.  The default raises</span>
+<span class="sd">        ``NotImplementedError``; subclasses backed by a ``ContributionsMixin``</span>
+<span class="sd">        forecaster override this to delegate.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Raw time series data (will be preprocessed internally).</span>
+<span class="sd">            forecast_start: Optional start time for forecasts.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError: If the model does not support contributions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> does not support predict_contributions&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ForecastingModel">
+<a class="viewcode-back" href="../../../api/generated/openstef_models.models.ForecastingModel.html#openstef_models.models.ForecastingModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ForecastingModel</span><span class="p">(</span><span class="n">BaseForecastingModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Single-forecaster pipeline: preprocessing -&gt; forecaster -&gt; postprocessing.</span>
+
+<span class="sd">    Orchestrates the full forecasting workflow by managing feature engineering,</span>
+<span class="sd">    model training/prediction, and result postprocessing. Automatically handles</span>
+<span class="sd">    the differences between single-horizon and multi-horizon forecasters while</span>
+<span class="sd">    ensuring data consistency and validation throughout the pipeline.</span>
+
+<span class="sd">    Invariants:</span>
+<span class="sd">        - fit() must be called before predict()</span>
+<span class="sd">        - Forecaster and preprocessing horizons must match during initialization</span>
+
+<span class="sd">    Important:</span>
+<span class="sd">        The ``cutoff_history`` parameter is crucial when using lag-based features in</span>
+<span class="sd">        preprocessing. For example, a lag-14 transformation creates NaN values for</span>
+<span class="sd">        the first 14 days of data. Set ``cutoff_history`` to exclude these incomplete</span>
+<span class="sd">        rows from training. You must configure this manually based on your preprocessing</span>
+<span class="sd">        pipeline since lags cannot be automatically inferred from the transforms.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        Basic forecasting workflow:</span>
+
+<span class="sd">        &gt;&gt;&gt; from openstef_models.models.forecasting.constant_median_forecaster import (</span>
+<span class="sd">        ...     ConstantMedianForecaster,</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; from openstef_core.types import LeadTime</span>
+<span class="sd">        &gt;&gt;&gt; from datetime import timedelta</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; # Note: This is a conceptual example showing the API structure</span>
+<span class="sd">        &gt;&gt;&gt; # Real usage requires implemented forecaster classes</span>
+<span class="sd">        &gt;&gt;&gt; forecaster = ConstantMedianForecaster(</span>
+<span class="sd">        ...     horizons=[LeadTime.from_string(&quot;PT36H&quot;)]</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; # Create and train model</span>
+<span class="sd">        &gt;&gt;&gt; model = ForecastingModel(</span>
+<span class="sd">        ...     forecaster=forecaster,</span>
+<span class="sd">        ...     cutoff_history=timedelta(days=14),  # Match your maximum lag in preprocessing</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(training_data)  # doctest: +SKIP</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; # Generate forecasts</span>
+<span class="sd">        &gt;&gt;&gt; forecasts = model.predict(new_data)  # doctest: +SKIP</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">forecaster</span><span class="p">:</span> <span class="n">Forecaster</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=...</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Underlying forecasting algorithm, either single-horizon or multi-horizon.&quot;</span><span class="p">,</span>
+        <span class="n">exclude</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">quantiles</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Quantile</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="o">.</span><span class="n">quantiles</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">max_horizon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LeadTime</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="o">.</span><span class="n">max_horizon</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">hyperparams</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HyperParams</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="o">.</span><span class="n">hparams</span>
 
     <span class="nd">@property</span>
     <span class="nd">@override</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="o">.</span><span class="n">is_fitted</span>
+
+<div class="viewcode-block" id="ForecastingModel.get_explainable_components">
+<a class="viewcode-back" href="../../../api/generated/openstef_models.models.ForecastingModel.html#openstef_models.models.ForecastingModel.get_explainable_components">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_explainable_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ExplainableForecaster</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="p">,</span> <span class="n">ExplainableForecaster</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">{}</span></div>
+
 
 <div class="viewcode-block" id="ForecastingModel.fit">
 <a class="viewcode-back" href="../../../api/generated/openstef_models.models.ForecastingModel.html#openstef_models.models.ForecastingModel.fit">[docs]</a>
@@ -630,7 +919,7 @@
 <span class="sd">        Raises:</span>
 <span class="sd">            InsufficientlyCompleteError: If no training data remains after dropping rows with NaN targets.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">validate_horizons_present</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">horizons</span><span class="p">)</span>
+        <span class="n">validate_horizons_present</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="o">.</span><span class="n">horizons</span><span class="p">)</span>
 
         <span class="n">target_dropna</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">dropna</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">])</span>  <span class="c1"># pyright: ignore[reportUnknownMemberType]</span>
         <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">pipe_pandas</span><span class="p">(</span><span class="n">target_dropna</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
@@ -688,141 +977,27 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="ForecastingModel.predict">
-<a class="viewcode-back" href="../../../api/generated/openstef_models.models.ForecastingModel.html#openstef_models.models.ForecastingModel.predict">[docs]</a>
     <span class="nd">@override</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">,</span> <span class="n">forecast_start</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastDataset</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate forecasts using the trained model.</span>
-
-<span class="sd">        Transforms input data through the preprocessing pipeline, generates predictions</span>
-<span class="sd">        using the underlying forecaster, and applies postprocessing transformations.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            data: Input time series data for generating forecasts.</span>
-<span class="sd">            forecast_start: Starting time for forecasts. If None, uses data end time.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            Processed forecast dataset with predictions and uncertainty estimates.</span>
-
-<span class="sd">        Raises:</span>
-<span class="sd">            NotFittedError: If the model hasn&#39;t been trained yet.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_fitted</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">NotFittedError</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
-
-        <span class="c1"># Transform the input data to a valid forecast input</span>
-        <span class="n">input_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare_input</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">forecast_start</span><span class="o">=</span><span class="n">forecast_start</span><span class="p">)</span>
-
-        <span class="c1"># Generate predictions</span>
-        <span class="n">raw_predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict</span><span class="p">(</span><span class="n">input_data</span><span class="o">=</span><span class="n">input_data</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">postprocessing</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">raw_predictions</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="ForecastingModel.prepare_input">
-<a class="viewcode-back" href="../../../api/generated/openstef_models.models.ForecastingModel.html#openstef_models.models.ForecastingModel.prepare_input">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_input</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">,</span>
-        <span class="n">forecast_start</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastInputDataset</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare input data for forecasting by applying preprocessing and filtering.</span>
-
-<span class="sd">        Transforms raw time series data through the preprocessing pipeline, restores</span>
-<span class="sd">        the target column, and filters out incomplete historical data to ensure</span>
-<span class="sd">        training quality.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            data: Raw time series dataset to prepare for forecasting.</span>
-<span class="sd">            forecast_start: Optional start time for forecasts. If provided and earlier</span>
-<span class="sd">                than the cutoff time, overrides the cutoff for data filtering.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            Processed forecast input dataset ready for model prediction.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Transform and restore target column</span>
-        <span class="n">input_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">input_data</span> <span class="o">=</span> <span class="n">restore_target</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">input_data</span><span class="p">,</span> <span class="n">original_dataset</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">target_column</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">)</span>
-
-        <span class="c1"># Cut away input history to avoid training on incomplete data</span>
-        <span class="n">input_data_start</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;pd.Series[pd.Timestamp]&quot;</span><span class="p">,</span> <span class="n">input_data</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">to_pydatetime</span><span class="p">()</span>
-        <span class="n">input_data_cutoff</span> <span class="o">=</span> <span class="n">input_data_start</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">cutoff_history</span>
-        <span class="k">if</span> <span class="n">forecast_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">forecast_start</span> <span class="o">&lt;</span> <span class="n">input_data_cutoff</span><span class="p">:</span>
-            <span class="n">input_data_cutoff</span> <span class="o">=</span> <span class="n">forecast_start</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="s2">&quot;Forecast start </span><span class="si">%s</span><span class="s2"> is after input data start + cutoff history </span><span class="si">%s</span><span class="s2">. Using forecast start as cutoff.&quot;</span><span class="p">,</span>
-                <span class="n">forecast_start</span><span class="p">,</span>
-                <span class="n">input_data_cutoff</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="n">input_data</span> <span class="o">=</span> <span class="n">input_data</span><span class="o">.</span><span class="n">filter_by_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">input_data_cutoff</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">ForecastInputDataset</span><span class="o">.</span><span class="n">from_timeseries</span><span class="p">(</span>
-            <span class="n">dataset</span><span class="o">=</span><span class="n">input_data</span><span class="p">,</span>
-            <span class="n">target_column</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">,</span>
-            <span class="n">forecast_start</span><span class="o">=</span><span class="n">forecast_start</span><span class="p">,</span>
-        <span class="p">)</span></div>
-
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">ForecastInputDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ForecastDataset</span><span class="p">:</span>
-        <span class="c1"># Predict and restore target column</span>
         <span class="n">prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">input_data</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">restore_target</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">prediction</span><span class="p">,</span> <span class="n">original_dataset</span><span class="o">=</span><span class="n">input_data</span><span class="p">,</span> <span class="n">target_column</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ForecastingModel.score">
-<a class="viewcode-back" href="../../../api/generated/openstef_models.models.ForecastingModel.html#openstef_models.models.ForecastingModel.score">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span>
+<div class="viewcode-block" id="ForecastingModel.predict_contributions">
+<a class="viewcode-back" href="../../../api/generated/openstef_models.models.ForecastingModel.html#openstef_models.models.ForecastingModel.predict_contributions">[docs]</a>
+    <span class="nd">@override</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict_contributions</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">TimeSeriesDataset</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SubsetMetric</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate model performance on the provided dataset.</span>
-
-<span class="sd">        Generates predictions for the dataset and calculates evaluation metrics</span>
-<span class="sd">        by comparing against ground truth values. Uses the configured evaluation</span>
-<span class="sd">        metrics to assess forecast quality at the maximum forecast horizon.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            data: Time series dataset containing both features and target values</span>
-<span class="sd">                for evaluation.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            Evaluation metrics including configured providers (e.g., R2, observed</span>
-<span class="sd">            probability) computed at the maximum forecast horizon.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_score</span><span class="p">(</span><span class="n">prediction</span><span class="o">=</span><span class="n">prediction</span><span class="p">)</span></div>
-
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prediction</span><span class="p">:</span> <span class="n">ForecastDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SubsetMetric</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">prediction</span><span class="o">.</span><span class="n">target_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Prediction dataset must contain target series for scoring.&quot;</span><span class="p">)</span>
-
-        <span class="c1"># We need to make sure there are no NaNs in the target label for metric calculation</span>
-        <span class="n">prediction</span> <span class="o">=</span> <span class="n">prediction</span><span class="o">.</span><span class="n">pipe_pandas</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">dropna</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">target_column</span><span class="p">])</span>  <span class="c1"># pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]</span>
-
-        <span class="n">pipeline</span> <span class="o">=</span> <span class="n">EvaluationPipeline</span><span class="p">(</span>
-            <span class="c1"># Needs only one horizon since we are using only a single prediction step</span>
-            <span class="c1"># If a more comprehensive test is needed, a backtest should be run.</span>
-            <span class="n">config</span><span class="o">=</span><span class="n">EvaluationConfig</span><span class="p">(</span><span class="n">available_ats</span><span class="o">=</span><span class="p">[],</span> <span class="n">lead_times</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_horizon</span><span class="p">]),</span>
-            <span class="n">quantiles</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">quantiles</span><span class="p">,</span>
-            <span class="c1"># Similarly windowed metrics are not relevant for single predictions.</span>
-            <span class="n">window_metric_providers</span><span class="o">=</span><span class="p">[],</span>
-            <span class="n">global_metric_providers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">evaluation_metrics</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">evaluation_result</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">run_for_subset</span><span class="p">(</span>
-            <span class="n">filtering</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_horizon</span><span class="p">,</span>
-            <span class="n">predictions</span><span class="o">=</span><span class="n">prediction</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">global_metric</span> <span class="o">=</span> <span class="n">evaluation_result</span><span class="o">.</span><span class="n">get_global_metric</span><span class="p">()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">global_metric</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">SubsetMetric</span><span class="p">(</span>
-                <span class="n">window</span><span class="o">=</span><span class="s2">&quot;global&quot;</span><span class="p">,</span>
-                <span class="n">timestamp</span><span class="o">=</span><span class="n">prediction</span><span class="o">.</span><span class="n">forecast_start</span><span class="p">,</span>
-                <span class="n">metrics</span><span class="o">=</span><span class="p">{},</span>
-            <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">global_metric</span></div>
+        <span class="n">forecast_start</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesDataset</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_fitted</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotFittedError</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="p">,</span> <span class="n">ContributionsMixin</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Forecaster </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> does not support predict_contributions&quot;</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">input_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare_input</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">forecast_start</span><span class="o">=</span><span class="n">forecast_start</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecaster</span><span class="o">.</span><span class="n">predict_contributions</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">input_data</span><span class="p">)</span></div>
+</div>
 
 
 
@@ -852,7 +1027,7 @@
     <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">pipe_pandas</span><span class="p">(</span><span class="n">_transform_restore_target</span><span class="p">)</span>
 
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ForecastingModel&quot;</span><span class="p">,</span> <span class="s2">&quot;ModelFitResult&quot;</span><span class="p">,</span> <span class="s2">&quot;restore_target&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;BaseForecastingModel&quot;</span><span class="p">,</span> <span class="s2">&quot;ForecastingModel&quot;</span><span class="p">,</span> <span class="s2">&quot;ModelFitResult&quot;</span><span class="p">,</span> <span class="s2">&quot;restore_target&quot;</span><span class="p">]</span>
 </pre></div>
 
                 </article>

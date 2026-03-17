@@ -454,6 +454,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">plotly.graph_objects</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">go</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">openstef_core.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">ForecastInputDataset</span><span class="p">,</span> <span class="n">TimeSeriesDataset</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">openstef_core.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Q</span><span class="p">,</span> <span class="n">Quantile</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">openstef_models.explainability.plotters.feature_importance_plotter</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureImportancePlotter</span>
 
@@ -501,6 +502,43 @@
 <span class="sd">            Color intensity indicates relative importance of each feature.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">FeatureImportancePlotter</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">scores</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">feature_importances</span><span class="p">,</span> <span class="n">quantile</span><span class="o">=</span><span class="n">quantile</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ContributionsMixin">
+<a class="viewcode-back" href="../../../api/generated/openstef_models.explainability.ContributionsMixin.html#openstef_models.explainability.ContributionsMixin">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ContributionsMixin</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mixin for forecasters that can explain per-sample feature contributions.</span>
+
+<span class="sd">    Unlike ``ExplainableForecaster`` which provides aggregate feature importance,</span>
+<span class="sd">    this mixin provides per-sample decomposition of predictions — i.e., how</span>
+<span class="sd">    much each feature contributed to the prediction for each individual sample.</span>
+
+<span class="sd">    For tree-based models (XGBoost), this corresponds to SHAP TreeExplainer values.</span>
+<span class="sd">    For linear models (GBLinear), this is the coefficient x feature value decomposition.</span>
+<span class="sd">    For ensembles, this shows each base model&#39;s contribution weight.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ContributionsMixin.predict_contributions">
+<a class="viewcode-back" href="../../../api/generated/openstef_models.explainability.ContributionsMixin.html#openstef_models.explainability.ContributionsMixin.predict_contributions">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict_contributions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">ForecastInputDataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeriesDataset</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute per-sample feature contributions for the given input data.</span>
+
+<span class="sd">        Returns a TimeSeriesDataset where columns are feature names (or model</span>
+<span class="sd">        names for ensemble contributions) and rows correspond to the same time</span>
+<span class="sd">        index as the input.  Values represent the additive contribution of each</span>
+<span class="sd">        feature to the prediction at that timestep.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data: Preprocessed input data (same format as ``predict()`` takes).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            TimeSeriesDataset with feature contributions.  Columns are features,</span>
+<span class="sd">            rows are timesteps.  A ``bias`` column may be included for the</span>
+<span class="sd">            model intercept/base value.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
 </div>
 
 </pre></div>
